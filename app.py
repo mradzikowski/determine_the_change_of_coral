@@ -103,6 +103,7 @@ def get_pink_masked_photo(img_bgr):
 
 
 def get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now):
+    counter = 0
     recovery_bounding_boxes = find_contours(RECOVERY)
     growth_bounding_boxes = find_contours(GROWTH)
     death_bounding_boxes = find_contours(DEATH)
@@ -113,6 +114,7 @@ def get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now):
     print("BLEACHING", bleaching_bounding_boxes)
 
     if len(recovery_bounding_boxes) > 0:
+        counter += 1
         for bounding_box in recovery_bounding_boxes:
             x = bounding_box[0]
             y = bounding_box[1]
@@ -120,15 +122,8 @@ def get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now):
             h = bounding_box[3]
             cv2.rectangle(image_now, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-    if len(death_bounding_boxes) > 0:
-        for bounding_box in death_bounding_boxes:
-            x = bounding_box[0]
-            y = bounding_box[1]
-            w = bounding_box[2]
-            h = bounding_box[3]
-            cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 255, 255), 2)
-
     if len(growth_bounding_boxes) > 0:
+        counter += 1
         for bounding_box in growth_bounding_boxes:
             x = bounding_box[0]
             y = bounding_box[1]
@@ -136,13 +131,25 @@ def get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now):
             h = bounding_box[3]
             cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
+    if len(death_bounding_boxes) > 0:
+        if counter < 2:
+            counter += 1
+            for bounding_box in death_bounding_boxes:
+                x = bounding_box[0]
+                y = bounding_box[1]
+                w = bounding_box[2]
+                h = bounding_box[3]
+                cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 255, 255), 2)
+
     if len(bleaching_bounding_boxes) > 0:
-        for bounding_box in bleaching_bounding_boxes:
-            x = bounding_box[0]
-            y = bounding_box[1]
-            w = bounding_box[2]
-            h = bounding_box[3]
-            cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 0, 255), 2)
+        if counter < 2:
+            counter += 1
+            for bounding_box in bleaching_bounding_boxes:
+                x = bounding_box[0]
+                y = bounding_box[1]
+                w = bounding_box[2]
+                h = bounding_box[3]
+                cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 0, 255), 2)
     return image_now
 
 
@@ -203,7 +210,7 @@ def main():
 
     image_now_with_areas = get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now)
     cv2.imshow("OUTLINED IMAGE", image_now_with_areas)
-
+    cv2.imshow("BEFORE IMAGE", image_before)
     # cv2.imshow("MERGED NOW", masked_now_merged)
     # cv2.imshow("MERGED BEFORE", masked_before_merged)
 
