@@ -6,23 +6,21 @@ from skimage import data, img_as_float
 import numpy as np
 
 
-def draw_contours(diff, image_before, image_now):
-    thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+def find_contours(image_now):
+    # thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    cnts = cv2.findContours(image_now, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
+    array_of_bounding_boxes = []
     for c in cnts:
         area = cv2.contourArea(c)
-        area_min = 400
-        area_max = 1200
+        area_min = 800
+        area_max = 4000
         if area_min <= area <= area_max:
             (x, y, w, h) = cv2.boundingRect(c)
-            cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            # cv2.rectangle(image_now, (x, y), (x + w, y + h), colour, 2)
+            array_of_bounding_boxes.append((x, y, w, h))
 
-    cv2.imshow("BEFORE", image_before)
-    cv2.imshow("Modified", image_now)
-    cv2.imshow("Diff", diff)
-    cv2.imshow("Thresh", thresh)
-    cv2.waitKey(0)
+    return array_of_bounding_boxes
 
 
 def calculate_ssim(img1, img2):
@@ -91,15 +89,61 @@ def get_white_masked_photo(img_bgr):
 
 
 def get_pink_masked_photo(img_bgr):
-    lower_pink = np.array([100, 60, 180])
-    upper_pink = np.array([200, 180, 220])
+    lower_pink = np.array([100, 50, 130])
+    upper_pink = np.array([240, 200, 230])
 
-    mask = cv2.inRange(img_bgr, lower_pink, upper_pink)
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+    mask = cv2.inRange(img_hsv, lower_pink, upper_pink)
     res = cv2.bitwise_and(img_bgr, img_bgr, mask=mask)
     kernel = np.ones((5, 5), np.uint8)
     closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel=kernel)
 
     return closing
+
+
+def get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now):
+    recovery_bounding_boxes = find_contours(RECOVERY)
+    growth_bounding_boxes = find_contours(GROWTH)
+    death_bounding_boxes = find_contours(DEATH)
+    bleaching_bounding_boxes = find_contours(BLEACHING)
+    print("RECOVER", recovery_bounding_boxes)
+    print("GROWTH", growth_bounding_boxes)
+    print("DEATH", death_bounding_boxes)
+    print("BLEACHING", bleaching_bounding_boxes)
+
+    if len(recovery_bounding_boxes) > 0:
+        for bounding_box in recovery_bounding_boxes:
+            x = bounding_box[0]
+            y = bounding_box[1]
+            w = bounding_box[2]
+            h = bounding_box[3]
+            cv2.rectangle(image_now, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+    if len(death_bounding_boxes) > 0:
+        for bounding_box in death_bounding_boxes:
+            x = bounding_box[0]
+            y = bounding_box[1]
+            w = bounding_box[2]
+            h = bounding_box[3]
+            cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 255, 255), 2)
+
+    if len(growth_bounding_boxes) > 0:
+        for bounding_box in growth_bounding_boxes:
+            x = bounding_box[0]
+            y = bounding_box[1]
+            w = bounding_box[2]
+            h = bounding_box[3]
+            cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    if len(bleaching_bounding_boxes) > 0:
+        for bounding_box in bleaching_bounding_boxes:
+            x = bounding_box[0]
+            y = bounding_box[1]
+            w = bounding_box[2]
+            h = bounding_box[3]
+            cv2.rectangle(image_now, (x, y), (x + w, y + h), (0, 0, 255), 2)
+    return image_now
 
 
 def main():
@@ -109,20 +153,19 @@ def main():
     grayB = cv2.cvtColor(image_now, cv2.COLOR_BGR2GRAY)
 
     transformed_image = allign_photos(grayA, grayB, image_before)
-    transformed_image_gray = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2GRAY) # BEFORE IMAGE ALLIGNED TO NOW
-
-
-    cv2.imshow("BEFORE", image_before)
-    cv2.imshow("Modified", image_now)
-    cv2.imshow("Trans",transformed_image_gray)
-    cv2.waitKey(0)
-
-    img_now_float = img_as_float(grayB) # B - now
-    before_alligned_float = img_as_float(transformed_image_gray) # A - before
-
-
-    img_now_float = cv2.resize(img_now_float, (480, 360))
-    before_alligned_float = cv2.resize(before_alligned_float, (480, 360))
+    # transformed_image_gray = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2GRAY) # BEFORE IMAGE ALIGNED TO NOW
+    #
+    # cv2.imshow("BEFORE", image_before)
+    # cv2.imshow("Modified", image_now)
+    # cv2.imshow("Trans",transformed_image_gray)
+    # cv2.waitKey(0)
+    #
+    # img_now_float = img_as_float(grayB) # B - now
+    # before_alligned_float = img_as_float(transformed_image_gray) # A - before
+    #
+    #
+    # img_now_float = cv2.resize(img_now_float, (480, 360))
+    # before_alligned_float = cv2.resize(before_alligned_float, (480, 360))
 
     img_masked_white = get_white_masked_photo(image_now)
     img_masked_white_before_alligned = get_white_masked_photo(transformed_image)
@@ -132,10 +175,10 @@ def main():
 
     masked_now_merged = cv2.bitwise_or(img_masked_white, pink_masked_now)
     masked_before_merged = cv2.bitwise_or(img_masked_white_before_alligned, pink_masked_alligned)
-
-    masked_differences_white = cv2.bitwise_xor(img_masked_white, img_masked_white_before_alligned)
-
-    masked_or_white = cv2.bitwise_or(img_masked_white, img_masked_white_before_alligned)
+    #
+    # masked_differences_white = cv2.bitwise_xor(img_masked_white, img_masked_white_before_alligned)
+    #
+    # masked_or_white = cv2.bitwise_or(img_masked_white, img_masked_white_before_alligned)
 
     # now_difference = img_masked_white_before_alligned - img_masked_white
     # cv2.imshow("DIFFRENCE BETWEEN WHITES", now_difference)
@@ -151,12 +194,15 @@ def main():
 
     DEATH = masked_before_merged - masked_now_merged
     cv2.imshow("DEATH", DEATH)
+    #
+    # cv2.imshow("Masked white", img_masked_white)
+    # cv2.imshow("Alligned white", img_masked_white_before_alligned)
+    #
+    # cv2.imshow("MASKED PINK NOW", pink_masked_now)
+    # cv2.imshow("MASKED PINK ALLIGNED", pink_masked_alligned)
 
-    cv2.imshow("Masked white", img_masked_white)
-    cv2.imshow("Alligned white", img_masked_white_before_alligned)
-
-    cv2.imshow("MASKED PINK NOW", pink_masked_now)
-    cv2.imshow("MASKED PINK ALLIGNED", pink_masked_alligned)
+    image_now_with_areas = get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now)
+    cv2.imshow("OUTLINED IMAGE", image_now_with_areas)
 
     # cv2.imshow("MERGED NOW", masked_now_merged)
     # cv2.imshow("MERGED BEFORE", masked_before_merged)
@@ -164,7 +210,6 @@ def main():
     # cv2.imshow("DIFFERENCE WHITE", masked_differences_white)
     # cv2.imshow("OR WHITE", masked_or_white)
     cv2.waitKey(0)
-
 
 
 if __name__ == "__main__":
