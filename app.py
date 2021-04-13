@@ -82,8 +82,8 @@ def get_white_masked_photo(img_bgr):
     mask = cv2.inRange(img_bgr, lower_white, upper_white)
     res = cv2.bitwise_and(img_bgr, img_bgr, mask=mask)
 
-    kernel = np.ones((5, 5), np.uint8)
-    closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel=kernel)
+    kernel = np.ones((3, 3), np.uint8)
+    closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel=kernel, iterations=3)
 
     return closing
 
@@ -96,8 +96,8 @@ def get_pink_masked_photo(img_bgr):
 
     mask = cv2.inRange(img_hsv, lower_pink, upper_pink)
     res = cv2.bitwise_and(img_bgr, img_bgr, mask=mask)
-    kernel = np.ones((5, 5), np.uint8)
-    closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel=kernel)
+    kernel = np.ones((3, 3), np.uint8)
+    closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel=kernel, iterations=5)
 
     return closing
 
