@@ -156,6 +156,10 @@ def get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now):
 def main():
     image_before = cv2.imread("photos/before.png")
     image_now = cv2.imread("photos/now.png")
+    # image_before = cv2.resize(image_before, (300, 300))
+    # image_now = cv2.resize(image_now, (300, 300))
+    # image_before = cv2.bilateralFilter(image_before, 3, 75, 75)
+    # image_now = cv2.bilateralFilter(image_now, 3, 75, 75)
     grayA = cv2.cvtColor(image_before, cv2.COLOR_BGR2GRAY)
     grayB = cv2.cvtColor(image_now, cv2.COLOR_BGR2GRAY)
 
@@ -196,10 +200,14 @@ def main():
     BLEACHING = cv2.bitwise_and(pink_masked_alligned, img_masked_white)
     cv2.imshow("BLEACHING", BLEACHING)
 
+    kernel = np.ones((7, 7), np.uint8)
+
     GROWTH = pink_masked_now - pink_masked_alligned - RECOVERY + BLEACHING
+    GROWTH = cv2.morphologyEx(GROWTH, cv2.MORPH_OPEN, kernel, 10)
     cv2.imshow("GROWTH", GROWTH)
 
-    DEATH = masked_before_merged - masked_now_merged
+    DEATH = masked_before_merged - masked_now_merged - GROWTH
+    DEATH = cv2.morphologyEx(DEATH, cv2.MORPH_OPEN, kernel, 10)
     cv2.imshow("DEATH", DEATH)
     #
     # cv2.imshow("Masked white", img_masked_white)
@@ -211,8 +219,8 @@ def main():
     image_now_with_areas = get_bounding_boxes(RECOVERY, GROWTH, DEATH, BLEACHING, image_now)
     cv2.imshow("OUTLINED IMAGE", image_now_with_areas)
     cv2.imshow("BEFORE IMAGE", image_before)
-    # cv2.imshow("MERGED NOW", masked_now_merged)
-    # cv2.imshow("MERGED BEFORE", masked_before_merged)
+    cv2.imshow("MERGED NOW", masked_now_merged)
+    cv2.imshow("MERGED BEFORE", masked_before_merged)
 
     # cv2.imshow("DIFFERENCE WHITE", masked_differences_white)
     # cv2.imshow("OR WHITE", masked_or_white)
